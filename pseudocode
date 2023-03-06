@@ -1,0 +1,54 @@
+struct op{
+	bool is_reader;
+	op(bool r){
+		if(r) is_reader=1;
+		else is_reader=0;
+	}
+}
+
+int waiting_writers=0;
+int readers=0;
+semaphores mutex,write_turn,read_turn
+vector<op> operations;
+int i=0;
+
+void ReaderProcess(){
+	wait(mutex);
+	op current=op(1);
+	operations.push_back(current);
+	wait(read_turn);
+	readers++;
+	i++;
+	if(readers==1){
+		wait(write_turn);
+	}
+	if(i==operations.size() || operations[i].is_reader)signal(read_turn);
+	signal(mutex);
+
+	//reading is performed
+
+	wait(mutex);
+	readers--;
+	if(readers==0) signal(write_turn);
+	signal(mutex);
+}
+
+void WriterProcess(){
+	wait(mutex);
+	op current=op(0);
+	operations.push_back(current);
+	waiting_writers++;
+	if(waiting_writers==1)wait(read_turn);
+	wait(write_turn);
+	waiting_writers--;
+	signal(mutex);
+
+	//writing is performed
+
+	wait(mutex);
+	i++;
+	if(i<operations.size() && operations[i].is_reader)singal(read_turn);
+	else signal(write_turn);
+	if(i==operations.size()) signal(read_turn);
+	signal(mutex);
+}
